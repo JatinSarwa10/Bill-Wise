@@ -1,5 +1,5 @@
 import { getAuth } from "@clerk/express";
-import BusinessProfile from "../models/businessProfileModel";
+import BusinessProfile from "../models/businessProfileModel.js";
 
 const API_BASE = "http://localhost:4000";
 
@@ -135,7 +135,7 @@ export async function getMybusinessProfile(req, res){
         if(!userId){
             return res.status(401).json({sucess: false, message : "authentication required"})
         }
-        const profile = await BusinessProfile.FindOne({owner: userId}).lean();
+        const profile = await BusinessProfile.findOne({owner: userId}).lean();
         if(!profile){
             return res.status(204).json({
                 success: true,

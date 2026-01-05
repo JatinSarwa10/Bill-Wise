@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import Invoice from "../models/invoiceModel.js";
 import { getAuth } from "@clerk/express";
-import path from'path'
+import path from 'path'
 
 const API_BASE = "http://localhost:4000";
 
@@ -14,9 +14,8 @@ function computeTotals(items = [], taxPercent = 0) {
   const tax = (subtotal * Number(taxPercent || 0)) / 100;
   const total = subtotal + tax;
   return { subtotal, tax, total };
-} // computes subtotal , tax and total
+}
 
-//parse FormData items
 function parseItemsField(val) {
   if (!val) return [];
   if (Array.isArray(val)) return val;
@@ -31,12 +30,10 @@ function parseItemsField(val) {
   return val;
 }
 
-// check of string is obj ID
-function isObjectString(val) {
-  return typeof val === "string" && /^[0-9a-fA-F]{24}$/.test(val);
+function isObjectIdString(val) {
+  return mongoose.Types.ObjectId.isValid(val);
 }
 
-//for helper function for uploading files to public url
 function uploadedFilesToUrls(req) {
   const urls = {};
   if (!req.files) return urls;
@@ -59,7 +56,6 @@ function uploadedFilesToUrls(req) {
   return urls;
 }
 
-//generate a unique number to avoid collision in the DB for invoice number
 async function generateUniqueInvoiceNumber(attempts = 8) {
   for (let i = 0; i < attempts; i++) {
     const ts = Date.now().toString();
@@ -75,7 +71,6 @@ async function generateUniqueInvoiceNumber(attempts = 8) {
   return new mongoose.Types.ObjectId().toString();
 }
 
-//to create an Invoice
 /* ----------------- CREATE ----------------- */
 export async function createInvoice(req, res) {
   try {
@@ -96,7 +91,6 @@ export async function createInvoice(req, res) {
     const totals = computeTotals(items, taxPercent);
     const fileUrls = uploadedFilesToUrls(req);
 
-    // If client supplied invoiceNumber, ensure it doesn't already exist
     let invoiceNumberProvided =
       typeof body.invoiceNumber === "string" && body.invoiceNumber.trim()
         ? String(body.invoiceNumber).trim()
@@ -113,14 +107,12 @@ export async function createInvoice(req, res) {
       }
     }
 
-    // generate a unique invoice number (or use provided)
     let invoiceNumber =
       invoiceNumberProvided || (await generateUniqueInvoiceNumber());
 
-    // Build document
     const doc = new Invoice({
       _id: new mongoose.Types.ObjectId(),
-      owner: userId, // associate invoice with Clerk userId
+      owner: userId,
       invoiceNumber,
       issueDate: body.issueDate || new Date().toISOString().slice(0, 10),
       dueDate: body.dueDate || "",
@@ -154,16 +146,14 @@ export async function createInvoice(req, res) {
       notes: body.notes || body.aiSource || "",
     });
 
-    // Save with retry on duplicate-key (race conditions)
     let saved = null;
     let attempts = 0;
     const maxSaveAttempts = 6;
     while (attempts < maxSaveAttempts) {
       try {
         saved = await doc.save();
-        break; // success
+        break;
       } catch (err) {
-        // If duplicate invoiceNumber (race), regenerate and retry
         if (
           err &&
           err.code === 11000 &&
@@ -171,13 +161,10 @@ export async function createInvoice(req, res) {
           err.keyPattern.invoiceNumber
         ) {
           attempts += 1;
-          // generate a new invoiceNumber and set on doc
           const newNumber = await generateUniqueInvoiceNumber();
           doc.invoiceNumber = newNumber;
-          // loop to try save again
           continue;
         }
-        // other errors → rethrow
         throw err;
       }
     }
@@ -191,7 +178,7 @@ export async function createInvoice(req, res) {
 
     return res
       .status(201)
-      .json({ success: true, message: "Invoice created", data: saved });
+      .json({ success: false, message: "Invoice created", data: saved });
   } catch (err) {
     console.error("createInvoice error:", err);
     if (err.type === "entity.too.large") {
@@ -199,7 +186,6 @@ export async function createInvoice(req, res) {
         .status(413)
         .json({ success: false, message: "Payload too large" });
     }
-    // handle duplicate key at top-level just in case
     if (
       err &&
       err.code === 11000 &&
@@ -214,24 +200,40 @@ export async function createInvoice(req, res) {
   }
 }
 
-//list of all inovices
+/* ----------------- LIST ALL INVOICES ----------------- */
 export async function getInvoices(req, res) {
   try {
-    const { userId } = getAuth(req) || {};
+    console.log('getInvoices called - Checking auth...');
+    
+    // FIRST TRY: Use getAuth
+    const auth = getAuth(req);
+    console.log('getAuth result:', auth);
+    
+    // SECOND TRY: Check if middleware already set userId
+    const userId = auth?.userId || req.auth?.userId;
+    console.log('Final userId:', userId);
+    
     if (!userId) {
+      console.log('No userId found!');
       return res.status(401).json({
         success: false,
         message: "Authentication required.",
       });
     }
 
-    const q = { owner: userId };
-    if (req.query.status) q.status = req.query.status;
-    if (req.query.inoviceNumber) q.invoiceNumber = req.query.invoiceNumber;
-    //for filters
+    console.log('Fetching invoices for userId:', userId);
+    
+    // Build query
+    const query = { owner: userId };
+    
+    // Add filters if provided
+    if (req.query.status) {
+      query.status = req.query.status;
+    }
+    
     if (req.query.search) {
       const search = req.query.search.trim();
-      q.$or = [
+      query.$or = [
         { fromEmail: { $regex: search, $options: "i" } },
         { "client.email": { $regex: search, $options: "i" } },
         { "client.name": { $regex: search, $options: "i" } },
@@ -239,21 +241,34 @@ export async function getInvoices(req, res) {
       ];
     }
 
-    const inovices = (await Invoice.find(q)).toSorted({ createAt: -1 }).lean();
+    // Find invoices
+    const invoices = await Invoice.find(query);
+    console.log(`Found ${invoices.length} invoices`);
+    
+    // Sort manually (don't use toSorted on Mongoose results)
+    const sortedInvoices = invoices.sort((a, b) => {
+      return new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0);
+    });
+
+    // Convert to plain objects
+    const plainInvoices = sortedInvoices.map(invoice => invoice.toObject());
+
     return res.status(200).json({
-      sucess: true,
-      data: inovices,
+      success: true,
+      data: plainInvoices,
     });
   } catch (error) {
-    console.log("GET Invoice Error", error);
+    console.error("GET Invoice Error:", error);
+    console.error("Error stack:", error.stack);
     return res.status(500).json({
       success: false,
       message: "Server Error",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }
 
-//get invoice by ID
+/* ----------------- GET SINGLE INVOICE ----------------- */
 export async function getInvoiceByID(req, res) {
   try {
     const { userId } = getAuth(req) || {};
@@ -262,31 +277,39 @@ export async function getInvoiceByID(req, res) {
         success: false,
         message: "Authentication required.",
       });
-      const { id } = req.params;
-      let inv;
-      if (isObjectIdString(id)) inv = await Invoice.findById(id);
-      else inv = await Invoice.findOne({ invoiceNumber: id });
+    }
 
-      if (!inv)
-        return res.status(404).json({
-          success: false,
-          message: "invoice not found",
-        });
+    const { id } = req.params;
+    
+    // Check if it's a valid ObjectId
+    let invoice;
+    if (isObjectIdString(id)) {
+      invoice = await Invoice.findById(id);
+    } else {
+      invoice = await Invoice.findOne({ invoiceNumber: id });
+    }
 
-      if (inv.owner && String(inv.owner) !== String(userId)) {
-        return res.status(403).json({
-          success: false,
-          message: "Forbidden: Not your invoice",
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        data: inv,
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: "Invoice not found",
       });
     }
+
+    // Check ownership
+    if (invoice.owner && String(invoice.owner) !== String(userId)) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: Not your invoice",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: invoice,
+    });
   } catch (error) {
-    console.log("GET Invoice Error", error);
+    console.error("GET Invoice By ID Error:", error);
     return res.status(500).json({
       success: false,
       message: "Server Error",
@@ -294,155 +317,163 @@ export async function getInvoiceByID(req, res) {
   }
 }
 
-
-//update an invoice 
-export async function updateInvoice(req, res){
-    try {
-         const { userId } = getAuth(req) || {};
+/* ----------------- UPDATE INVOICE ----------------- */
+export async function updateInvoice(req, res) {
+  try {
+    const { userId } = getAuth(req) || {};
     if (!userId) {
       return res.status(401).json({
         success: false,
         message: "Authentication required.",
       });
     }
-        const {id} = req.params;
-        const body = req.body || {};
+    
+    const { id } = req.params;
+    const body = req.body || {};
 
-        const query = isObjectString(id) ? {_id: id, owner: userId } : {inoviceNumber:  id, owner: userId}
-        const existing = await Invoice.findOne(query)
+    const query = isObjectIdString(id) 
+      ? { _id: id, owner: userId } 
+      : { invoiceNumber: id, owner: userId };
+    
+    const existing = await Invoice.findOne(query);
 
-        if(!existing){
-            return res.status(404).json({success: false, message : "Invoice not found"})
-       }
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Invoice not found" });
+    }
 
-       //if user changes the invoice number 
-       //ensure that it is not exists already or not in use
-         if (body.invoiceNumber && String(body.invoiceNumber).trim() !== existing.invoiceNumber) {
-      const conflict = await Invoice.findOne({ invoiceNumber: String(body.invoiceNumber).trim() });
+    // Validate new invoice number
+    if (body.invoiceNumber && String(body.invoiceNumber).trim() !== existing.invoiceNumber) {
+      const conflict = await Invoice.findOne({ 
+        invoiceNumber: String(body.invoiceNumber).trim() 
+      });
       if (conflict && String(conflict._id) !== String(existing._id)) {
-        return res
-          .status(409)
-          .json({ success: false, message: "Invoice number already exists" });
+        return res.status(409).json({ 
+          success: false, 
+          message: "Invoice number already exists" 
+        });
       }
     }
 
+    // Parse items
     let items = [];
-    if (Array.isArray(body.items)) items = body.items;
-    else if (typeof body.items === "string" && body.items.length) {
+    if (Array.isArray(body.items)) {
+      items = body.items;
+    } else if (typeof body.items === "string" && body.items.length) {
       try {
         items = JSON.parse(body.items);
       } catch {
         items = [];
       }
+    } else if (existing.items) {
+      items = existing.items;
     }
 
+    // Calculate totals
     const taxPercent = Number(
       body.taxPercent ?? body.tax ?? body.defaultTaxPercent ?? existing.taxPercent ?? 0
     );
     const totals = computeTotals(items, taxPercent);
     const fileUrls = uploadedFilesToUrls(req);
 
-    // to Update
-     const update = {
-      invoiceNumber: body.invoiceNumber,
-      issueDate: body.issueDate,
-      dueDate: body.dueDate,
-      fromBusinessName: body.fromBusinessName,
-      fromEmail: body.fromEmail,
-      fromAddress: body.fromAddress,
-      fromPhone: body.fromPhone,
-      fromGst: body.fromGst,
-      client:
-        typeof body.client === "string" && body.client.trim()
-          ? { name: body.client }
-          : body.client || existing.client || {},
+    // Prepare update object
+    const update = {
+      invoiceNumber: body.invoiceNumber || existing.invoiceNumber,
+      issueDate: body.issueDate || existing.issueDate,
+      dueDate: body.dueDate !== undefined ? body.dueDate : existing.dueDate,
+      fromBusinessName: body.fromBusinessName || existing.fromBusinessName,
+      fromEmail: body.fromEmail || existing.fromEmail,
+      fromAddress: body.fromAddress || existing.fromAddress,
+      fromPhone: body.fromPhone || existing.fromPhone,
+      fromGst: body.fromGst || existing.fromGst,
+      client: body.client || existing.client || {},
       items,
       subtotal: totals.subtotal,
       tax: totals.tax,
       total: totals.total,
-      currency: body.currency,
-      status: body.status ? String(body.status).toLowerCase() : undefined,
+      currency: body.currency || existing.currency || "INR",
+      status: body.status ? String(body.status).toLowerCase() : existing.status,
       taxPercent,
-      logoDataUrl:
-        fileUrls.logoDataUrl ||
-        (body.logoDataUrl || body.logo) ||
-        undefined,
-      stampDataUrl:
-        fileUrls.stampDataUrl ||
-        (body.stampDataUrl || body.stamp) ||
-        undefined,
-      signatureDataUrl:
-        fileUrls.signatureDataUrl ||
-        (body.signatureDataUrl || body.signature) ||
-        undefined,
-      signatureName: body.signatureName,
-      signatureTitle: body.signatureTitle,
-      notes: body.notes,
+      logoDataUrl: fileUrls.logoDataUrl || body.logoDataUrl || body.logo || existing.logoDataUrl,
+      stampDataUrl: fileUrls.stampDataUrl || body.stampDataUrl || body.stamp || existing.stampDataUrl,
+      signatureDataUrl: fileUrls.signatureDataUrl || body.signatureDataUrl || body.signature || existing.signatureDataUrl,
+      signatureName: body.signatureName || existing.signatureName,
+      signatureTitle: body.signatureTitle || existing.signatureTitle,
+      notes: body.notes !== undefined ? body.notes : existing.notes,
     };
 
-    Object.keys(update).forEach((k)=> update[k] === undefined && delete update[k]);
+    // Remove undefined fields
+    Object.keys(update).forEach((k) => update[k] === undefined && delete update[k]);
 
     const updated = await Invoice.findOneAndUpdate(
-        {_id: existing._id},
-        {$set: update},
-        {new: true, runValidators: true}
-    )
+      { _id: existing._id },
+      { $set: update },
+      { new: true, runValidators: true }
+    );
 
-    if(!updated) res.status(500).json({
-        success:false,
-        message:"failed to Update Invoice"
-    })
-    return res.status(200).json({
-        success: true,
-        message: " Invoice Updated successfully",
-        data: updated
-    })
-    } 
-    catch (err) {
-        console.error("updateInvoice error:", err);
-    if (err && err.code === 11000 && err.keyPattern && err.keyPattern.invoiceNumber) {
-      return res
-        .status(409)
-        .json({ success: false, message: "Invoice number already exists" });
-    }
-    return res.status(500).json({ success: false, message: "Server error" });
-        
-    }
-}
-
-//to delete an invoice 
-export async function deleteInvoice(req,res){
-    try{
-        const { userId } = getAuth(req) || {};
-        if (!userId) {
-            return res.status(401).json({
-            success: false,
-            message: "Authentication required.",
+    if (!updated) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update invoice"
       });
     }
-    const {id} = req.params;
-          
 
-    const query = isObjectString(id) ? {_id: id, owner: userId } : {inoviceNumber:  id, owner: userId}
-    const existing = await Invoice.findOne(query)
-
-    const found= await Invoice.findOne(query);
-    if(!found)
-        return res.status(404).json({
-            sucess: false,
-            message: "Invoice not found"
-    });
-    await Invoice.deleteOne({_id: found._id});
     return res.status(200).json({
-            success: true,
-            message: "INvoice deleted"
-        })
+      success: true,
+      message: "Invoice updated successfully",
+      data: updated
+    });
+  } catch (err) {
+    console.error("updateInvoice error:", err);
+    if (err && err.code === 11000 && err.keyPattern && err.keyPattern.invoiceNumber) {
+      return res.status(409).json({ 
+        success: false, 
+        message: "Invoice number already exists" 
+      });
     }
-    catch(error){
-    console.log("Delete Invoice Error", error);
-        return res.status(500).json({
+    return res.status(500).json({ 
+      success: false, 
+      message: "Server error" 
+    });
+  }
+}
+
+/* ----------------- DELETE INVOICE ----------------- */
+export async function deleteInvoice(req, res) {
+  try {
+    const { userId } = getAuth(req) || {};
+    if (!userId) {
+      return res.status(401).json({
         success: false,
-        message: "Server Error",
-        });
+        message: "Authentication required.",
+      });
     }
+    
+    const { id } = req.params;
+
+    const query = isObjectIdString(id) 
+      ? { _id: id, owner: userId } 
+      : { invoiceNumber: id, owner: userId };
+    
+    const existing = await Invoice.findOne(query);
+    
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: "Invoice not found"
+      });
+    }
+
+    await Invoice.deleteOne({ _id: existing._id });
+    
+    return res.status(200).json({
+      success: true,
+      message: "Invoice deleted"
+    });
+  } catch (error) {
+    console.error("Delete Invoice Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
 }

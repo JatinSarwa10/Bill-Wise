@@ -14,7 +14,7 @@ const port = 4000;
 
 //middleware
 app.use(cors({
-    origin:"http://localhost:5173/",
+    origin:"http://localhost:5173",
     credentials: true
 }
 ));
@@ -28,7 +28,7 @@ connectDB();
 //routes
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-app.use("/api/inovoice", invoiceRouter);
+app.use("/api/invoice", invoiceRouter);
 app.use("/api/businessProfile",businessProfileRouter);
 app.use('/api/aiInvoiceRouter', aiInvoiceRouter);
 

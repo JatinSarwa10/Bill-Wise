@@ -2,7 +2,7 @@ import express from 'express'
 import { GoogleGenAI } from '@google/genai'
 import dotenv  from 'dotenv'
 import { modelNames } from 'mongoose';
-import { json } from 'body-parser';
+
 
 dotenv.config();
 const aiInvoiceRouter = express.Router();
