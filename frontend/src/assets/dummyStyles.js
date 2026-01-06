@@ -281,7 +281,7 @@ export const appShellStyles = {
   layout: "lg:flex",
   
   // Desktop Sidebar
-  sidebar: "hidden lg:block bg-white/80 backdrop-blur-xl border-r border-gray-200/60 transition-all duration-500 ease-in-out relative",
+  sidebar: "hidden lg:block bg-white/80 backdrop-blur-xl border-r border-gray-200/60 transition-all duration-500 ease-in-out relative z-40",
   sidebarCollapsed: "w-20",
   sidebarExpanded: "w-80",
   sidebarGradient: "absolute inset-0 bg-gradient-to-b from-blue-50/5 to-transparent pointer-events-none",
@@ -388,7 +388,7 @@ export const dashboardStyles = {
   
   // Main Content Grid
   mainGrid: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-4 gap-8",
-  sidebarColumn: "xl:col-span-1 space-y-6",
+  sidebarColumn: "xl:col-span-1 space-y-6 z-0",
   contentColumn: "xl:col-span-3",
   
   // Cards

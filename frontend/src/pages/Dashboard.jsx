@@ -327,6 +327,10 @@ const Dashboard = () => {
     const clientName = getClientName(inv);
     return clientName ? clientName.charAt(0).toUpperCase() : "C";
   };
+    function openInvoice(invRow) {
+    const payload = invRow;
+    navigate(`/app/invoices/${invRow.id}`, { state: { invoice: payload } });
+  }
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {

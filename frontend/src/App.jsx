@@ -5,6 +5,7 @@ import Home from './pages/Home'
 import { RedirectToSignIn, SignedIn, SignedOut } from '@clerk/clerk-react'
 import AppShell from './components/AppShell'
 import Dashboard from './pages/Dashboard'
+import CreateInvoice from './pages/CreateInvoice'
 
 const ClerkProtected = ({children}) => (
 
@@ -17,6 +18,7 @@ const ClerkProtected = ({children}) => (
 )
 
 
+
 const App = () =>{
   return (
   <div className='min-h-screen max-w-full overflow-x-hidden'>
@@ -27,6 +29,8 @@ const App = () =>{
     </ClerkProtected>} >
     <Route index element={<Dashboard />}  />
     <Route path="dashboard" element={<Dashboard />} />
+    <Route path="create-invoice" element={<CreateInvoice />} />
+
     </Route>
    </Routes>
 

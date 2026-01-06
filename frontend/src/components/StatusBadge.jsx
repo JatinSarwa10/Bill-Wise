@@ -92,7 +92,10 @@ const StatusBadge = ({ status = "", size = "default", showIcon = true }) => {
     },
   };
 
-  const config = statusConfig[config.icon] || StatusIcons.draft ;
+    const config = statusConfig[s] || statusConfig.draft;
+  
+  // Get the Icon component based on the status
+  const IconComponent = StatusIcons[config.icon] || StatusIcons.draft;
 
    const sizeClasses = {
     small: "px-2 py-1 text-xs gap-1.5",
@@ -104,7 +107,7 @@ const StatusBadge = ({ status = "", size = "default", showIcon = true }) => {
       <div className={`absolute inset-0 bg-linear-to-r ${config.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
       {showIcon && (
         <div className="relative z-10 flex items-center">
-          <IconComponen className=" w-3 h-3"/>
+          <IconComponent className=" w-3 h-3"/>
         </div>
       )}
 

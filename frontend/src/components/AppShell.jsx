@@ -68,7 +68,6 @@ const AppShell = () => {
   };
 
   //display name
-
   const displayName = (() => {
     if (!user) return "User";
     const name = user.fullName || user.firstName || user.username || "";
@@ -87,8 +86,8 @@ const AppShell = () => {
       parts[0].charAt(0) + parts[parts.length - 1].charAt(0)
     ).toUpperCase();
   };
+
   //for icons
-  /* ----- Icons (kept as you had) ----- */
   const DashboardIcon = ({ className = "w-5 h-5" }) => (
     <svg
       className={className}
@@ -217,37 +216,6 @@ const AppShell = () => {
   return (
     <div className={appShellStyles.root}>
       <div className={appShellStyles.layout}>
-        {/* Mobile Header with Menu Button */}
-        <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white shadow-sm transition-all duration-300 py-3 px-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Link to="/">
-                <img src={Logo} alt="logo" className="h-8 w-8" />
-              </Link>
-              <span className="font-semibold text-gray-800">Bill-Wise</span>
-            </div>
-
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <svg
-                className="w-6 h-6 text-gray-700"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-
         {/* sidebar */}
         <aside
           className={`${appShellStyles.sidebar} ${
@@ -271,7 +239,7 @@ const AppShell = () => {
                       alt="logo"
                       className={appShellStyles.logoImage}
                     />
-                    <div className="absolute inset-0 rounded-lg blur-sm group-hover:blur-md transition-all duration-300" />
+                    <div className="aboslute inset-0 rounded-lg blur-sm group-hover:blur-md transition-all duration-300" />
                   </div>
                   {!collapsed && (
                     <div className={appShellStyles.logoText}>
@@ -340,7 +308,7 @@ const AppShell = () => {
                     }`}
                   >
                     {!collapsed && (
-                      <span>{collapsed ? "expand" : "collapsed"}</span>
+                      <span>{collapsed ? "Expand" : "Collapsed"}</span>
                     )}
                     <CollapseIcon collapsed={collapsed} />
                   </button>
@@ -350,7 +318,7 @@ const AppShell = () => {
           </div>
         </aside>
 
-        {/* Mobile Overlay */}
+        {/* mobile view - FROM FIRST FILE */}
         {mobileOpen && (
           <div className={appShellStyles.mobileOverlay}>
             <div
@@ -373,7 +341,6 @@ const AppShell = () => {
                     Bill-Wise
                   </span>
                 </Link>
-
                 <button
                   onClick={() => setMobileOpen(false)}
                   className={appShellStyles.mobileCloseButton}
@@ -390,7 +357,7 @@ const AppShell = () => {
                 </button>
               </div>
 
-              {/* Navigation for mobile */}
+                            {/* navigation for mobile */}
               <nav className={appShellStyles.mobileNav}>
                 <NavLink
                   onClick={() => setMobileOpen(false)}
@@ -405,7 +372,6 @@ const AppShell = () => {
                 >
                   <DashboardIcon /> Dashboard
                 </NavLink>
-
                 <NavLink
                   onClick={() => setMobileOpen(false)}
                   to="/app/invoices"
@@ -419,7 +385,6 @@ const AppShell = () => {
                 >
                   <InvoiceIcon /> Invoices
                 </NavLink>
-
                 <NavLink
                   onClick={() => setMobileOpen(false)}
                   to="/app/create-invoice"
@@ -433,7 +398,6 @@ const AppShell = () => {
                 >
                   <CreateIcon /> Create Invoice
                 </NavLink>
-
                 <NavLink
                   onClick={() => setMobileOpen(false)}
                   to="/app/business"
@@ -449,7 +413,7 @@ const AppShell = () => {
                 </NavLink>
               </nav>
 
-              <div className={appShellStyles.mobileLogoutSection}>
+               <div className={appShellStyles.mobileLogoutSection}>
                 <button
                   onClick={() => {
                     setMobileOpen(false);
@@ -464,7 +428,8 @@ const AppShell = () => {
           </div>
         )}
 
-        {/* main content section  */}
+        
+        {/* main content section - FROM SECOND FILE */}
         <div className="flex-1 min-w-0">
           <header
             className={`${appShellStyles.header} ${
@@ -528,10 +493,8 @@ const AppShell = () => {
               <div className={appShellStyles.userAvatarContainer}>
                 <div className={appShellStyles.userAvatar}>
                   {initials()}
-                  <div className={appShellStyles.userAvatarBorder}>
-                  </div>
-                  <div className={appShellStyles.userStatus}>
-                  </div>
+                  <div className={appShellStyles.userAvatarBorder}></div>
+                  <div className={appShellStyles.userStatus}></div>
                 </div>
               </div>
             </div>
@@ -540,7 +503,6 @@ const AppShell = () => {
           <main className={appShellStyles.main}>
             <div className={appShellStyles.mainContainer}>
               <Outlet />
-
             </div>
           </main>
         </div>
