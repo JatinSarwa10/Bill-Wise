@@ -433,7 +433,7 @@ const Dashboard = () => {
               </div>
               <div className={dashboardStyles.quickStatsRow}>
                 <span className={dashboardStyles.quickStatsLabel}>
-                  COllection Eff.
+                  Collection Eff.
                 </span>
                 <span className={dashboardStyles.quickStatsValue}>
                   {kpis.paidPercentage.toFixed(1)}%

@@ -6,6 +6,8 @@ import { RedirectToSignIn, SignedIn, SignedOut } from '@clerk/clerk-react'
 import AppShell from './components/AppShell'
 import Dashboard from './pages/Dashboard'
 import CreateInvoice from './pages/CreateInvoice'
+import Invoices from './pages/Invoices'
+import InvoicePreview from './components/InvoicePreview'
 
 const ClerkProtected = ({children}) => (
 
@@ -29,6 +31,12 @@ const App = () =>{
     </ClerkProtected>} >
     <Route index element={<Dashboard />}  />
     <Route path="dashboard" element={<Dashboard />} />
+    <Route path="invoices" element={<Invoices />} />
+    <Route path="invoices/new" element={<createInvoice />}/>
+    <Route path="invoices/:id" element={<InvoicePreview />}/>
+    <Route path="invoices/:id/preview" element={<InvoicePreview />}/>
+    <Route path="invoices/:id/edit" element={<createInvoice/>}/> 
+
     <Route path="create-invoice" element={<CreateInvoice />} />
 
     </Route>
