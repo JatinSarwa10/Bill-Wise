@@ -36,7 +36,7 @@ const App = () =>{
     <Route path="invoices/new" element={<createInvoice />}/>
     <Route path="invoices/:id" element={<InvoicePreview />}/>
     <Route path="invoices/:id/preview" element={<InvoicePreview />}/>
-    <Route path="invoices/:id/edit" element={<createInvoice/>}/> 
+    <Route path="invoices/:id/edit" element={<CreateInvoice/>}/> 
 
     <Route path="create-invoice" element={<CreateInvoice />} />
     <Route path="business" element={<BussinessProfile />} />

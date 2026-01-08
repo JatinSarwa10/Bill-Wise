@@ -158,7 +158,7 @@ const Hero = () => {
                     <div className={heroStyles.cardLogoContainer}>
                       <div className={heroStyles.cardLogo}>BW</div>
                       <div>
-                        <div className={heroStyles.cardClient}>Bill-Wise</div>
+                        <div className={heroStyles.cardClientName}>Bill-Wise</div>
                         <div className={heroStyles.cardClientGst}>
                           GST: 7584412369722
                         </div>
@@ -189,7 +189,7 @@ const Hero = () => {
                         <div className={heroStyles.itemDot}></div>
 
                         <span className={heroStyles.itemDescription}>
-                          {item.Description}
+                          {item.description}
                         </span>
                       </div>
                       <span className={heroStyles.itemAmount}>
