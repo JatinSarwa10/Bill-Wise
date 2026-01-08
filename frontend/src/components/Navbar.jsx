@@ -25,7 +25,7 @@ const Navbar = () => {
       if (token) {
         try {
           localStorage.setItem(Token_key, token);
-          console.log(token);
+          // console.log(token);
         } catch (e) {
           console.log(e);
         }

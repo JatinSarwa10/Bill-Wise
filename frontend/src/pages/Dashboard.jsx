@@ -130,7 +130,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { getToken, isSignedIn } = useAuth();
 
-  const obtaintoken = useCallback(async () => {
+  const obtainToken = useCallback(async () => {
     if (!isSignedIn) {
       return null;
     }
@@ -156,34 +156,19 @@ const Dashboard = () => {
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
     setError(null);
-
-    if (!isSignedIn) {
-      setError("Please sign in to view invoices");
-      setLoading(false);
-      setStoredInvoices([]);
-      return;
-    }
-
     try {
-      const token = await obtaintoken();
-      if (!token) {
-        setError("Unable to authenticate. Please sign in again.");
-        setStoredInvoices([]);
-        setLoading(false);
-        return;
-      }
+      const token = await obtainToken();
+      const headers = { Accept: "application/json" };
+
+      if (token) headers["Authorization"] = `Bearer ${token}`;
 
       const res = await fetch(`${API_BASE}/api/invoice`, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
+        headers,
       });
-
       const json = await res.json().catch(() => null);
-
-      if (res.status === 401) {
+     if (res.status === 401) {
+        // unauthorized - prompt login
         setError("Unauthorized. Please sign in.");
         setStoredInvoices([]);
         return;
@@ -206,6 +191,7 @@ const Dashboard = () => {
           client: clientObj,
           amount: amountVal,
           currency,
+          // keep status normalized
           status:
             typeof inv.status === "string"
               ? capitalize(inv.status)
@@ -217,28 +203,58 @@ const Dashboard = () => {
       console.error("Failed to fetch invoices:", err);
       setError(err?.message || "Failed to load invoices");
       setStoredInvoices([]);
-    } finally {
+    } 
+    finally{
       setLoading(false);
     }
-  }, [obtaintoken, isSignedIn]);
+  },[obtainToken]);
+
+  //fetch the user profile
+  const fetchBusinessProfile = useCallback(async()=>{
+    try {
+      const token = await obtainToken();
+      if(!token) return;
+      const res = await fetch(`${API_BASE}/api/businessProfile/me`,{
+        method: "GET",
+        headers:{
+          Authorization: `Bearer ${token}`,
+          Accept:"application/json",
+        }
+      })
+      if (res.status === 401) {
+        // silently ignore; profile not available
+        return;
+      }
+      if (!res.ok) return;
+      const json = await res.json().catch(() => null);
+      const data = json?.data || null;
+      if (data) setBusinessProfile(data);
+    } catch (err) {
+      // non-fatal
+      console.warn("Failed to fetch business profile:", err);
+    }
+  }, [obtainToken]);
+  
 
   useEffect(() => {
     if (isSignedIn) {
       fetchInvoices();
-    } else {
-      setLoading(false);
-      setError("Please sign in to view dashboard");
-      setStoredInvoices([]);
-    }
+      fetchBusinessProfile();
+    } 
+    // else {
+    //   setLoading(false);
+    //   setError("Please sign in to view dashboard");
+    //   setStoredInvoices([]);
+    // }
 
     function onStorage(e) {
-      if (e.key === "invoice_v1" && isSignedIn) {
+      if (e.key === "invoice_v1") {
         fetchInvoices();
       }
     }
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, [fetchInvoices, isSignedIn]);
+  }, [fetchInvoices, fetchBusinessProfile, isSignedIn]);
 
   const HARD_RATES = {
     USD_TO_INR: 90,
@@ -327,7 +343,7 @@ const Dashboard = () => {
     const clientName = getClientName(inv);
     return clientName ? clientName.charAt(0).toUpperCase() : "C";
   };
-    function openInvoice(invRow) {
+  function openInvoice(invRow) {
     const payload = invRow;
     navigate(`/app/invoices/${invRow.id}`, { state: { invoice: payload } });
   }
@@ -629,7 +645,10 @@ const Dashboard = () => {
                           <div className={dashboardStyles.emptyStateMessage}>
                             No invoice yet
                           </div>
-                          <button onClick={() => navigate("/app/create-invoice")} className={dashboardStyles.emptyStateAction}>
+                          <button
+                            onClick={() => navigate("/app/create-invoice")}
+                            className={dashboardStyles.emptyStateAction}
+                          >
                             Create Your First Invoice
                           </button>
                         </div>
