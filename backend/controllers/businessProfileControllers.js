@@ -28,7 +28,7 @@ export async function createBusinessProfile(req, res){
             return res.status(401).json({sucess: false, message : "authentication required"})
         }
         const body = req.body || {};
-        const fileUrls = uploadedfilesTOUrls(req);
+        const fileUrls = uploadedFilesToUrls(req);
 
           //  CREATE BUSINESS PROFILE
     const profile = new BusinessProfile({
@@ -54,7 +54,7 @@ export async function createBusinessProfile(req, res){
          })
     } 
     catch (err) {
-        console.log(err);
+        console.error(err);
         return res.status(500).json({
             sucess:false,
             message:"Error to create a business profile"
@@ -73,7 +73,7 @@ export async function updateBusinessProfile(req, res) {
 
         const  {id} = req.params;
         const body = req.body || {};
-        const fileUrls = uploadedfilesTOUrls(req);
+        const fileUrls = uploadedFilesToUrls(req);
 
         const existing = await BusinessProfile.findById(id);
         if(!existing) return res.status(404).json({
@@ -119,7 +119,7 @@ export async function updateBusinessProfile(req, res) {
         message:"profile updated successfull"
     })
     } catch (err) {
-         console.log(err);
+         console.error(err);
         return res.status(500).json({
             sucess:false,
             message:"Error to update a business profile"
@@ -145,7 +145,7 @@ export async function getMybusinessProfile(req, res){
         return res.status(200).json({success: true, data: profile});
 
     } catch (err) {
-        console.log(err);
+        console.error(err);
         return res.status(500).json({
             sucess:false,
             message:"get business profile"

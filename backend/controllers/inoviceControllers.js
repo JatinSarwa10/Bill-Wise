@@ -178,7 +178,7 @@ export async function createInvoice(req, res) {
 
     return res
       .status(201)
-      .json({ success: false, message: "Invoice created", data: saved });
+      .json({ success: true, message: "Invoice created", data: saved });
   } catch (err) {
     console.error("createInvoice error:", err);
     if (err.type === "entity.too.large") {
@@ -205,12 +205,11 @@ export async function getInvoices(req, res) {
   try {
     console.log('getInvoices called - Checking auth...');
     
-    // FIRST TRY: Use getAuth
-    const auth = getAuth(req);
-    console.log('getAuth result:', auth);
+    // Use the Clerk auth middleware
+    const authData = getAuth(req);
+    console.log('auth result:', authData);
     
-    // SECOND TRY: Check if middleware already set userId
-    const userId = auth?.userId || req.auth?.userId;
+    const userId = authData?.userId;
     console.log('Final userId:', userId);
     
     if (!userId) {

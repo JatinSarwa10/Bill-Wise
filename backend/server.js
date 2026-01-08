@@ -18,7 +18,9 @@ app.use(cors({
     credentials: true
 }
 ));
-app.use(clerkMiddleware())
+app.use(clerkMiddleware({
+    clockSkewTolerance: 30
+}))
 app.use(express.json({limit: "20mb"}));
 app.use(express.urlencoded({limit: "20mb", extended: true}))
 
