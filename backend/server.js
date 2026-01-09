@@ -4,17 +4,18 @@ import 'dotenv/config';
 import { clerkMiddleware } from '@clerk/express'
 import { connectDB } from './config/db.js';
 import path from "path";
+
 import invoiceRouter from './routes/inoviceRouter.js';
 import businessProfileRouter from './routes/businessProfileRouter.js';
 import aiInvoiceRouter from './routes/aiInvoiceRouter.js';
 
 
 const app = express();
-const port = 4000;
+const port = process.env.PORT || 4000;
 
 //middleware
 app.use(cors({
-    origin:"http://localhost:5173",
+    origin:process.env.CLIENT_URL || 'http://localhost:5173',
     credentials: true
 }
 ));
@@ -32,12 +33,12 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.use("/api/invoice", invoiceRouter);
 app.use("/api/businessProfile",businessProfileRouter);
-app.use('/api/aiInvoiceRouter', aiInvoiceRouter);
+app.use('/api/ai', aiInvoiceRouter);
 
 app.get('/',(req,res)=>{
     res.send("api is working");
 })
 
 app.listen(port, ()=>{
-    console.log(`server is running on http://localhost:${port}`)
+    console.log(`server is running on port ${port}`)
 })

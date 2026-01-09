@@ -115,7 +115,7 @@ aiInvoiceRouter.post('/generate', async (req, res)=>{
             })
         }
         const {prompt} = req.body;
-        if(!prompt || prompt.trim()){
+        if(!prompt || !prompt.trim()){
             return res.status(400).json({
                 success: false,
                 message: " prompt text required"

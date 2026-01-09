@@ -6,7 +6,7 @@ import { useState } from "react";
 import KpiCard from "../components/KpiCard";
 import StatusBadge from "../components/StatusBadge";
 
-const API_BASE = "http://localhost:4000";
+ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 function currencyFmt(amount = 0, currency = "INR") {
   try {
