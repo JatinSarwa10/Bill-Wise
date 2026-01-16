@@ -17,7 +17,7 @@ const ItemSchema = new mongoose.Schema({
     },
     unitPrice:{
         type: Number,
-        reuired: true,
+        required: true,
         default: 0
     }
 },{
@@ -61,7 +61,7 @@ const InvoiceSchema = new mongoose.Schema({
     currency: { type: String, default: "INR" },
     status: { type: String, enum: ["draft", "unpaid", "paid", "overdue"], default: "draft" },
 
-    //For ASSETS HNADLING
+    //For ASSETS HANDLING
     logoDataUrl: { type: String, default: null },
     stampDataUrl: { type: String, default: null },
     signatureDataUrl: { type: String, default: null },
@@ -78,5 +78,5 @@ const InvoiceSchema = new mongoose.Schema({
     timestamps: true
 });
 
-const Invoice = mongoose.models.Invoice || mongoose.model("Inovice", InvoiceSchema);
+const Invoice = mongoose.models.Invoice || mongoose.model("Invoice", InvoiceSchema);
 export default Invoice;
